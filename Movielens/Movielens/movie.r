@@ -47,7 +47,7 @@ edx <- rbind(edx, removed)
 rm(dl, ratings, movies, test_index, temp, movielens, removed)
 #=======
   
-  
+  #
   # Rating column removed from the Validation dataset for analysis
   validation_CM <- validation  
   validation <- validation %>% select(-rating)  
