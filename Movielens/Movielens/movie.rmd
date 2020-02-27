@@ -11,10 +11,69 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ## R Markdown
+# 1. Introduction
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+The main objective here is producing product recommendations through a analytical system by applying statistical techniques. We are taking movielens database to predict ratings of the movies.
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+The 10M version of the dataset available in the grouplens website. Based on the different statical models, we will build a rating predictor system. 
+
+### Dataset
+- [MovieLens 10M] https://grouplens.org/datasets/movielens/10m/
+- [MovieLens 10M- zip file] http://files.grouplens.org/datasets/movielens/ml-10m.zip
+
+### Data Loading
+
+```{r data_load, warning=FALSE, error=FALSE, message=FALSE}
+if(!require(tidyverse)) install.packages("tidyverse", repos = "http://cran.us.r-project.org")
+if(!require(caret)) install.packages("caret", repos = "http://cran.us.r-project.org")
+if(!require(data.table)) install.packages("data.table", repos = "http://cran.us.r-project.org")
+
+library(readr)
+movies <- read_delim("ml-10M100K/movies.dat", 
+                     "::", escape_double = FALSE, col_names = FALSE, 
+                     trim_ws = TRUE)
+View(movies)
+ratings <- read_delim("ml-10M100K/ratings.dat", 
+                     "::", escape_double = FALSE, col_names = FALSE, 
+                     trim_ws = TRUE)
+
+
+movies <- movies %>% select(-X2,-X4)
+colnames(movies) <- c("movieId", "title", "genres")
+
+ratings <- ratings %>% select(-X2,-X4,-X6)
+colnames(ratings) <- c("userId", "movieId", "rating", "timestamp")
+
+movies <- as.data.frame(movies) %>% mutate(movieId = as.numeric(movieId)[movieId],
+                                           title = as.character(title),
+                                           genres = as.character(genres))
+
+ratings <- as.data.frame(ratings) %>% mutate(userId = as.numeric(userId),
+                                              movieId = as.numeric(movieId),
+                                              rating = as.numeric(rating),
+                                             timestamp = as.numeric(timestamp))
+
+
+movielens <- left_join(ratings, movies, by = "movieId")
+
+
+```
+
+### Libraries
+
+The following libraries were used in this report:
+```{r libs, warning=FALSE, error=FALSE, message=FALSE}
+library(ggplot2)
+library(lubridate)
+library(caret)
+library(tidyverse)
+```
+
+### Aim & Objectives
+
+The main objective in this report is to train a machine learning algorithm using the inputs of a provided subset (edx dataset) to predict movie ratings in a provided validation set.
+
+Additionally, gglpot2 is used in the data exploration section to reveal some interesting trends in the dataset and the factors that affects the users' ratings.  The  assessments of the 4 models that will be developed is based on their resulting RMSE. Lastly, the optimal model is used to predict the movie ratings.
 
 ```{r cars}
 summary(cars)
