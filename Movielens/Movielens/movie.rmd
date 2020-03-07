@@ -160,7 +160,7 @@ edx %>%
     ggplot(aes(n)) +
     geom_histogram(bins = 30, color = "maroon", fill = "green") +
     scale_x_log10() +
-  geom_hline(yintercept=125) +
+  geom_hline(yintercept=125, color = "brown",size=1) +
     xlab("No. of ratings") +
     ylab("No.of movies") +
     ggtitle("No. ratings per movie")
