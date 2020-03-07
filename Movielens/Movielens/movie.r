@@ -87,7 +87,9 @@ edx <- rbind(edx, removed)
 validation_CM <- validation  # save the rating information
 validation <- validation %>% select(-rating)#=======
 
-head(validation_CM)
+#==================================
+# Remove unneeded files to free some RAM
+rm(dl, ratings, movies, test_index, temp, movielens, removed)
   
    # Checking sample data using head
   head(edx)
@@ -105,9 +107,10 @@ head(validation_CM)
   # Modify the year as a column in the edx & validation datasets
   
   edx <- edx%>%separate(title,c("name", "year"), "\\s*\\((?=\\d+\\)$)|\\)$")
+  validation <- validation%>%separate(title,c("name", "year"), "\\s*\\((?=\\d+\\)$)|\\)$")
   
-  edx <- edx %>% mutate(year = as.numeric(str_sub(title,-5,-2)))
-  validation <- validation %>% mutate(year = as.numeric(str_sub(title,-5,-2)))
+  # edx <- edx %>% mutate(year = as.numeric(str_sub(title,-5,-2)))
+  # validation <- validation %>% mutate(year = as.numeric(str_sub(title,-5,-2)))
   
   head(split_edx)
   head(validation)
@@ -497,3 +500,22 @@ head(validation_CM)
   ## View the final predictions 
   
   View(predicted_ratings)
+  
+  df <- data.frame(a = c("1", "2", NA, NA), b = c(NA, NA, "3", "4"), c = c(NA, "5", "6", NA), stringsAsFactors = F)
+  library(dplyr)
+  df <- df %>%
+    mutate(a = coalesce(a,b))
+  
+  df$w <- rowMeans(data[, c("a", "b")], na.rm=TRUE)
+  
+  df %>% unite("w", a:b, na.rm = TRUE, remove = FALSE)
+  
+  df <- data.frame(a = c("American President, The (1995)", "Dracula", "Ace Ventura", "Lawnmower Man 2"), b = c(NA, "When Nature Calls (1995)", "When Nature Calls (1995)", "Beyond Cyberspace (1996)"),stringsAsFactors = F)
+  df$a
+  
+  data <- data.frame('a' = c('A','B','C','D','E'),
+                     'x' = c(1,2,NA,NA,NA),
+                     'y' = c(NA,NA,3,NA,NA),
+                     'z' = c(NA,NA,NA,4,5))
+  
+  df %>% unite(a,b)

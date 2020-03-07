@@ -1,0 +1,165 @@
+
+### Regularized With All Effects Model
+
+The final model is implemented with the genres and release year effects.
+
+```{r regularized with all effects}
+# b_y and b_g represent the year & genre effects, respectively
+lambdas <- seq(0, 20, 1)
+  
+  # Note: the below code could take some time 
+  
+  rmses <- sapply(lambdas, function(l){
+    
+    mu <- mean(edx$rating)
+    
+    b_i <- split_edx %>% 
+      group_by(movieId) %>%
+      summarize(b_i = sum(rating - mu)/(n()+l))
+    
+    b_u <- split_edx %>% 
+      left_join(b_i, by="movieId") %>%
+      group_by(userId) %>%
+      summarize(b_u = sum(rating - b_i - mu)/(n()+l))
+    
+    b_y <- split_edx %>%
+      left_join(b_i, by='movieId') %>%
+      left_join(b_u, by='userId') %>%
+      group_by(year) %>%
+      summarize(b_y = sum(rating - mu - b_i - b_u)/(n()+lambda), n_y = n())
+    
+    b_g <- split_edx %>%
+      left_join(b_i, by='movieId') %>%
+      left_join(b_u, by='userId') %>%
+      left_join(b_y, by = 'year') %>%
+      group_by(genres) %>%
+      summarize(b_g = sum(rating - mu - b_i - b_u - b_y)/(n()+lambda), n_g = n())
+    
+    pred_rat <- split_valid %>% 
+      left_join(b_i, by='movieId') %>%
+      left_join(b_u, by='userId') %>%
+      left_join(b_y, by = 'year') %>%
+      left_join(b_g, by = 'genres') %>%
+      mutate(pred = mu + b_i + b_u + b_y + b_g) %>% 
+      .$pred
+    
+    return(RMSE(split_valid_CM$rating,pred_rat))
+  })
+  
+  # Compute new predictions using the optimal lambda
+  # Test and save results 
+  
+  qplot(lambdas, rmses)  
+  lambda_2 <- lambdas[which.min(rmses)]
+  lambda_2
+  
+  movie_reg_avgs_2 <- split_edx %>% 
+    group_by(movieId) %>% 
+    summarize(b_i = sum(rating - mu)/(n()+lambda_2), n_i = n())
+  
+  user_reg_avgs_2 <- split_edx %>% 
+    left_join(movie_reg_avgs_2, by='movieId') %>%
+    group_by(userId) %>%
+    summarize(b_u = sum(rating - mu - b_i)/(n()+lambda_2), n_u = n())
+  
+  year_reg_avgs <- split_edx %>%
+    left_join(movie_reg_avgs_2, by='movieId') %>%
+    left_join(user_reg_avgs_2, by='userId') %>%
+    group_by(year) %>%
+    summarize(b_y = sum(rating - mu - b_i - b_u)/(n()+lambda_2), n_y = n())
+  
+  
+  genre_reg_avgs <- split_edx %>%
+    left_join(movie_reg_avgs_2, by='movieId') %>%
+    left_join(user_reg_avgs_2, by='userId') %>%
+    left_join(year_reg_avgs, by = 'year') %>%
+    group_by(genres) %>%
+    summarize(b_g = sum(rating - mu - b_i - b_u - b_y)/(n()+lambda_2), n_g = n())
+  
+  predicted_ratings <- split_valid %>% 
+    left_join(movie_reg_avgs_2, by='movieId') %>%
+    left_join(user_reg_avgs_2, by='userId') %>%
+    left_join(year_reg_avgs, by = 'year') %>%
+    left_join(genre_reg_avgs, by = 'genres') %>%
+    mutate(pred = mu + b_i + b_u + b_y + b_g) %>% 
+    .$pred
+  
+  model_4_rmse <- RMSE(split_valid_CM$rating,predicted_ratings)
+  rmse_results <- bind_rows(rmse_results,
+                            data_frame(method="Reg Movie, User, Year, and Genre Effect Model",  
+                                       RMSE = model_4_rmse ))
+  rmse_results %>% knitr::kable()
+  
+```
+
+# 3. Results
+
+## RMSE overview
+The RMSE values for the used models are shown below:
+
+```{r rmse_results}
+rmse_results %>% knitr::kable()
+```
+
+## Rating Prediction using Model 4
+
+This final model gives the best rmse result and can select model for the final prediction.
+
+```{r rating_pred with model 4}
+# Round predicted ratings & confirm that they're between 0.5 & 5
+  
+  predicted_ratings <- round(predicted_ratings*2)/2
+  
+  predicted_ratings[which(predicted_ratings<1)] <- 0.5
+  predicted_ratings[which(predicted_ratings>5)] <- 5
+  
+  ##### Chosen Model: (Model 4)######
+  
+  lambda_3<-14
+  # Redo model 4 analysis
+  
+  movie_reg_avgs_2 <- split_edx %>% 
+    group_by(movieId) %>% 
+    summarize(b_i = sum(rating - mu)/(n()+lambda_3), n_i = n())
+  
+  user_reg_avgs_2 <- split_edx %>% 
+    left_join(movie_reg_avgs_2, by='movieId') %>%
+    group_by(userId) %>%
+    summarize(b_u = sum(rating - mu - b_i)/(n()+lambda_3), n_u = n())
+  
+  year_reg_avgs <- split_edx %>%
+    left_join(movie_reg_avgs_2, by='movieId') %>%
+    left_join(user_reg_avgs_2, by='userId') %>%
+    group_by(year) %>%
+    summarize(b_y = sum(rating - mu - b_i - b_u)/(n()+lambda_3), n_y = n())
+  
+  genre_reg_avgs <- split_edx %>%
+    left_join(movie_reg_avgs_2, by='movieId') %>%
+    left_join(user_reg_avgs_2, by='userId') %>%
+    left_join(year_reg_avgs, by = 'year') %>%
+    group_by(genres) %>%
+    summarize(b_g = sum(rating - mu - b_i - b_u - b_y)/(n()+lambda_3), n_g = n())
+  
+  ## Adding all effects to the validation set & predicting the ratings
+  ## Group by userId & movieID
+  ## Compute each prediction's mean 
+  
+  predicted_ratings <- split_valid %>% 
+    left_join(movie_reg_avgs_2, by='movieId') %>%
+    left_join(user_reg_avgs_2, by='userId') %>%
+    left_join(year_reg_avgs, by = 'year') %>%
+    left_join(genre_reg_avgs, by = 'genres') %>%
+    mutate(pred = mu + b_i + b_u + b_y + b_g) %>%
+    group_by(userId,movieId) %>% summarize(pred_2 = mean(pred))
+  
+  ## Round predicted_ratings & confirm that they're between 0.5 & 5
+  
+  predicted_ratings <- round(predicted_ratings*2)/2
+  predicted_ratings$pred_2[which(predicted_ratings$pred_2<1)] <- 0.5
+  predicted_ratings$pred_2[which(predicted_ratings$pred_2>5)] <- 5
+  
+  ## View the final predictions 
+  
+  View(predicted_ratings)
+
+```
