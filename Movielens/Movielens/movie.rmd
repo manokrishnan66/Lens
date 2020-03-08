@@ -70,6 +70,7 @@ The following libraries were used in this report:
 ```{r libs, warning=FALSE, error=FALSE, message=FALSE}
 library(ggplot2)
 library(lubridate)
+install.packages("caret",dependencies = c("Depends","Suggests"))
 library(caret)
 library(tidyverse)
 ```
@@ -145,7 +146,7 @@ Most common ratings are 3 and 4 compared to other ratings. Then half star rating
 ```{r distribution of ratings}
  edx %>% 
     ggplot(aes(rating)) + geom_histogram(binwidth=0.25, fill = "red") +
-    scale_x_discrete(limits = c(seq(0.5,5,0.5))) +
+    scale_x_discrete(limits = c(seq(0,5,1))) +
     scale_y_continuous(breaks = c(seq(0, 3000000, 250000))) +
     ggtitle("Distribution of Rating")
 ```
