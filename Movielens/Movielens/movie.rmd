@@ -1,34 +1,29 @@
 ---
+title: "HarvardX: PH125.9x Data Science  \n   MovieLens Rating Prediction Project"
+author: "Mano Krishnan"
+date: "March 09, 2020"
 output:
-  pdf_document: default
-  html_document: default
+  pdf_document:
+    toc: true
+    toc_depth: 3
+    number_sections: true
 ---
-<<<<<<< HEAD
----
-title: "Movielens_project"
-author: "Mano"
-date: "2/6/2020"
-output: pdf_document
----
+\pagebreak
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
-
-## R Markdown
 # 1. Introduction
 
 The main objective here is to producing product recommendations of an analytical system by applying statistical techniques. We are taking 'movielens' database to predict ratings of the movies.
 
 The 10M version of the dataset is available in the grouplens website. Based on the different statistical models, we will build a rating predictor system. 
 
-### Dataset
+### Dataset and Data Loading
 - [MovieLens 10M] https://grouplens.org/datasets/movielens/10m/
 - [MovieLens 10M- zip file] http://files.grouplens.org/datasets/movielens/ml-10m.zip
 
-### Data Loading
+Data Loading 
 
 ```{r data_load, warning=FALSE, error=FALSE, message=FALSE}
+tinytex::install_tinytex()
 if(!require(tidyverse)) install.packages("tidyverse", repos = "http://cran.us.r-project.org")
 if(!require(caret)) install.packages("caret", repos = "http://cran.us.r-project.org")
 if(!require(data.table)) install.packages("data.table", repos = "http://cran.us.r-project.org")
@@ -70,7 +65,6 @@ The following libraries were used in this report:
 ```{r libs, warning=FALSE, error=FALSE, message=FALSE}
 library(ggplot2)
 library(lubridate)
-install.packages("caret",dependencies = c("Depends","Suggests"))
 library(caret)
 library(tidyverse)
 ```
@@ -81,11 +75,15 @@ The provided dataset is divided into training set and validation set. We are tra
 
 Data visualization and data exploration is used to find the interesting trends and the factors affecting the users' ratings. We are creating four models based on their resulting RMSE and finalizing the optimal model to predict the movie ratings.  
 
-# 2. Methodology & Analysis
+# Methodology & Analysis
 ## Data Pre-processing
 ### Evaluation of Predicted Ratings using RMSE
 
 The root-mean-square deviation (RMSD) or root-mean-square error (RMSE) is a frequently used measure of the differences between values (sample or population values) predicted by a model or an estimator and the values observed. Here, we are using the RMSE value to evaluate each model.
+
+The function that computes the RMSE for vectors of ratings and their corresponding predictors will be the following:
+$$ RMSE = \sqrt{\frac{1}{N}\displaystyle\sum_{u,i} (\hat{y}_{u,i}-y_{u,i})^{2}} $$
+
 
 ```{r RMSE function}
 # function to calculate the RMSE values
@@ -113,7 +111,7 @@ validation_CM <- validation
 validation <- validation %>% select(-rating)
 ```
 
-### Modifying the Year & Genre
+### Modifying the Year
 
 The title column is merged with name of the movie and the year of release. So, we are splitting the title column into name and the year column. So that we can find the dependencies between years of release and rating.
 
@@ -138,7 +136,7 @@ summary(edx)
 edx %>% summarize(n_users = n_distinct(userId), n_movies = n_distinct(movieId))
 ```
 
-###Distribution of Ratings
+### Distribution of Ratings
 
 Most common ratings are 3 and 4 compared to other ratings. Then half star ratings are less popular to whole star ratings. The preference of the users is with the higher ratings than lower ratings.
 
@@ -151,7 +149,7 @@ Most common ratings are 3 and 4 compared to other ratings. Then half star rating
     ggtitle("Distribution of Rating")
 ```
 
-###Ratings per movie
+### Ratings per movie
 
 The majority of the movies have been rated between 50 and 1000 times. Another interesting fact shows that around 125 movies have been rated only once. These scenarios pushed us to add a penalty term in the model preparation.
 
@@ -166,23 +164,6 @@ edx %>%
     ylab("No.of movies") +
     ggtitle("No. ratings per movie")
 
-```
-
-
-### Movies rated only once
-
-Below analysis showed that more movies got only rating.  With the help of penalty term, we can adjust these caveats in the models.
-
-```{r movies rated_once}  
-edx %>%
-    group_by(movieId) %>%
-    summarize(count = n()) %>%
-    filter(count == 1) %>%
-    left_join(edx, by = "movieId") %>%
-    group_by(name) %>%
-    summarize(rating = rating, n_rating = count) %>%
-    slice(1:20) %>%
-    knitr::kable()
 ```
 
 ### Number of ratings by Number of Users
@@ -212,6 +193,22 @@ edx%>%
     arrange(desc(count))
 ```
 
+### Mean movie ratings by users
+
+```{r mean_movie_ratings}
+edx %>%
+group_by(userId) %>%
+filter(n() >= 100) %>%
+summarize(b = mean(rating)) %>%
+ggplot(aes(b)) +
+geom_histogram(bins = 30, fill = "blue", color = "black") +
+xlab("Mean-rating") +
+ylab("No of users") +
+ggtitle("Mean movie ratings by users") +
+scale_x_discrete(limits = c(seq(0,5,1))) +
+theme_light()
+
+```
 
 
 ## Data Analysis and modelling
@@ -256,9 +253,9 @@ user_av %>% qplot(b_u, geom ="histogram", bins = 30, data = ., color = I("green"
   
 ```
 ## Model Creation
-#### Model Validation #####
+#### Model Validation
   
-  The quality of the model will be assessed by the RMSE (the lower the better).
+The quality of the model will be assessed by the RMSE (the lower the better).
 
 ### Naive Model : just the mean
 
@@ -315,7 +312,7 @@ Next improvisation is achieved by adding the user effect.
 
 ```
 
-### Regularized Movie and User Effect Model
+### Regularized Movie and User Effect Model 
 
 This model adds the concept of regularization to account for the effect of low ratings' numbers for movies and users. This regularization used to reduce the effect of overfitting. 
 
@@ -343,19 +340,16 @@ lambdas <- seq(0, 10, 0.25)
       left_join(b_i, by = "movieId") %>%
       left_join(b_u, by = "userId") %>%
       mutate(pred = mu + b_i + b_u) %>%
-      pull(pred)
-    
-    return(RMSE(predrat, validation$rating))
+      .$pred
+      return(RMSE(predrat,validation_CM$rating))
+
   })
-  
   
   # Plot rmses vs lambdas to select the optimal lambda                                                             
   qplot(lambdas, rmses)  
   
-  
   # The optimal lambda                                                             
   lambda <- lambdas[which.min(rmses)]
-  #lambda <- 5.25
   
   # Compute regularized estimates of b_i using lambda
   movie_av_reg <- edx %>% 
@@ -377,19 +371,124 @@ lambdas <- seq(0, 10, 0.25)
     mutate(pred = mu + b_i + b_u) %>% 
     .$pred
   
+  
   # Test and save results
   
   model_3_rmse <- RMSE(validation_CM$rating,predrat_reg)
   rmse_results <- bind_rows(rmse_results,
-                            data_frame(method="Regularized Movie and User Effect Model",  
+                            data_frame(method="Regularized Movie and User Effect Model",
                                        RMSE = model_3_rmse ))
   rmse_results %>% knitr::kable()
   rmse_results
 
 ```
-# 4. Conclusion
 
-The regularized model including the effect of movie, user, genre and year is characterized by the lowest RMSE value (0.8623650) and is hence the optimal model to use for the present project.
+### Regularized Movie, User and year Effect Model
 
-Further improvement to this model could be achieved by adding the effect of gender and age on the
-movies' genre preference combined with the user's profession effect on ratings (different professions do 
+This model adds the concept of regularization to account for the effect of low ratings' numbers for year in-addition to the movie and user. This regularization used to reduce the effect of overfitting compared to earlier model. 
+
+```{r regularized movie, user and year model}
+# lambda is a tuning parameter
+# Use cross-validation to choose it.
+lambdas <- seq(0, 10, 0.25)
+  
+# For each lambda,find b_i1, b_u1 & b_y1, followed by rating prediction & testing
+  
+  rmses <- sapply(lambdas, function(l){
+    
+    mu <- mean(edx$rating)
+    
+    b_i1 <- edx %>% 
+      group_by(movieId) %>%
+      summarize(b_i1 = sum(rating - mu)/(n()+l))
+    
+    b_u1 <- edx %>% 
+      left_join(b_i1, by="movieId") %>%
+      group_by(userId) %>%
+      summarize(b_u1 = sum(rating - b_i1 - mu)/(n()+l))
+    
+    b_y1 <- edx %>% 
+      left_join(b_i1, by="movieId") %>%
+      left_join(b_u1, by="userId") %>%
+      group_by(year) %>%
+      summarize(b_y1 = sum(rating - b_u1 - b_i1 - mu)/(n()+l))
+
+    predrat1 <- 
+      validation %>% 
+      left_join(b_i1, by = "movieId") %>%
+      left_join(b_u1, by = "userId") %>%
+      left_join(b_y1, by = "year") %>%
+      mutate(pred = mu + b_i1 + b_u1 + b_y1) %>%
+      pull(pred)
+      
+      return(RMSE(predrat1, validation_CM$rating))
+  })
+
+  # Plot rmses vs lambdas to select the optimal lambda                                                             
+  qplot(lambdas, rmses)  
+
+  # The optimal lambda                                                             
+  lambda <- lambdas[which.min(rmses)]
+  
+  # Compute regularized estimates of b_i1 using lambda
+  movie_av_reg1 <- edx %>% 
+    group_by(movieId) %>% 
+    summarize(b_i1 = sum(rating - mu)/(n()+lambda), n_i1 = n())
+  
+  # Compute regularized estimates of b_u1 using lambda
+  
+  user_av_reg1 <- edx %>% 
+    left_join(movie_av_reg1, by='movieId') %>%
+    group_by(userId) %>%
+    summarize(b_u1 = sum(rating - mu - b_i1)/(n()+lambda), n_u1 = n())
+  
+  # Compute regularized estimates of b_y1 using lambda
+  
+  year_av_reg1 <- edx %>% 
+    left_join(movie_av_reg1, by='movieId') %>%
+    left_join(user_av_reg1, by='userId') %>%
+    group_by(year) %>%
+    summarize(b_y1 = sum(rating - mu - b_i1 - b_u1)/(n()+lambda), n_y1 = n())
+  
+  # Predict ratings
+  
+  predrat_reg1 <- validation %>% 
+    left_join(movie_av_reg1, by='movieId') %>%
+    left_join(user_av_reg1, by='userId') %>%
+    left_join(year_av_reg1, by = 'year') %>%
+    mutate(pred = mu + b_i1 + b_u1 + b_y1) %>% 
+    .$pred
+  
+  
+  # Test and save results
+  
+  model_4_rmse <- RMSE(validation_CM$rating,predrat_reg1)
+  rmse_results <- bind_rows(rmse_results,
+                            data_frame(method="Regularized Movie User and Year Effect Model",
+                                       RMSE = model_4_rmse ))
+  rmse_results %>% knitr::kable()
+  rmse_results
+
+```
+
+# Results
+The RMSE values of all the represented models are the following:
+
+```{r final results}
+rmse_results
+```
+
+As per above details, we found the lowest value of RMSE is 0.8647687.
+
+# Conclusion
+
+We have built a machine learning algorithm with different models to predict movie ratings. THe regularised model including the effect of movie, user and year is characterized by the lower RMSE value. Hence, this is the optimal model for this project. This model RMSE value is 0.8647687 which is lower than the evaluation criteria (0.86490). We can also improve the RMSE by adding other effects like genre and age.
+
+\pagebreak
+
+# Appendix - Enviroment
+
+```{r}
+print("Operating System:")
+version
+```

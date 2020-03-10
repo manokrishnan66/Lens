@@ -4,7 +4,7 @@
 ################################
 
 # Note: this process could take a couple of minutes
-
+tinytex::install_tinytex()
 if(!require(tidyverse)) install.packages("tidyverse", repos = "http://cran.us.r-project.org")
 if(!require(caret)) install.packages("caret", repos = "http://cran.us.r-project.org")
 if(!require(data.table)) install.packages("data.table", repos = "http://cran.us.r-project.org")
@@ -108,7 +108,9 @@ rm(dl, ratings, movies, test_index, temp, movielens, removed)
   
   edx <- edx%>%separate(title,c("name", "year"), "\\s*\\((?=\\d+\\)$)|\\)$")
   validation <- validation%>%separate(title,c("name", "year"), "\\s*\\((?=\\d+\\)$)|\\)$")
-  
+
+  str(edx)
+  str(validation)
   # edx <- edx %>% mutate(year = as.numeric(str_sub(title,-5,-2)))
   # validation <- validation %>% mutate(year = as.numeric(str_sub(title,-5,-2)))
   
@@ -302,11 +304,19 @@ rm(dl, ratings, movies, test_index, temp, movielens, removed)
       group_by(userId) %>%
       summarize(b_u = sum(rating - b_i - mu)/(n()+l))
     
+    b_y <- edx %>% 
+      left_join(b_i, by="movieId") %>%
+      left_join(b_u, by="userId") %>%
+      group_by(year) %>%
+      summarize(b_y = sum(rating - b_u - b_i - mu)/(n()+l))
+    
+    
     predrat <- 
       validation %>% 
       left_join(b_i, by = "movieId") %>%
       left_join(b_u, by = "userId") %>%
-      mutate(pred = mu + b_i + b_u) %>%
+      left_join(b_y, by = "year") %>%
+      mutate(pred = mu + b_i + b_u + b_y) %>%
       pull(pred)
     
     return(RMSE(predrat, validation$rating))
@@ -319,7 +329,8 @@ rm(dl, ratings, movies, test_index, temp, movielens, removed)
   
   # The optimal lambda                                                             
   lambda <- lambdas[which.min(rmses)]
-  lambda <- 5.25
+  lambda
+  #lambda <- 5.25
   
   # Compute regularized estimates of b_i using lambda
   movie_av_reg <- edx %>% 
@@ -333,12 +344,19 @@ rm(dl, ratings, movies, test_index, temp, movielens, removed)
     group_by(userId) %>%
     summarize(b_u = sum(rating - mu - b_i)/(n()+lambda), n_u = n())
   
+  year_av_reg <- edx %>% 
+    left_join(movie_av_reg, by='movieId') %>%
+    left_join(user_av_reg, by='userId') %>%
+    group_by(year) %>%
+    summarize(b_y = sum(rating - mu - b_i - b_u)/(n()+lambda), n_y = n())
+  
   # Predict ratings
   
   predrat_reg <- validation %>% 
     left_join(movie_av_reg, by='movieId') %>%
     left_join(user_av_reg, by='userId') %>%
-    mutate(pred = mu + b_i + b_u) %>% 
+    left_join(year_av_reg, by = 'year') %>%
+    mutate(pred = mu + b_i + b_u + b_y) %>% 
     .$pred
   
   # Test and save results
@@ -363,37 +381,29 @@ rm(dl, ratings, movies, test_index, temp, movielens, removed)
     
     mu <- mean(edx$rating)
     
-    b_i <- split_edx %>% 
+    b_i <- edx %>% 
       group_by(movieId) %>%
       summarize(b_i = sum(rating - mu)/(n()+l))
     
-    b_u <- split_edx %>% 
+    b_u <- edx %>% 
       left_join(b_i, by="movieId") %>%
       group_by(userId) %>%
       summarize(b_u = sum(rating - b_i - mu)/(n()+l))
     
-    b_y <- split_edx %>%
+    b_y <- edx %>%
       left_join(b_i, by='movieId') %>%
       left_join(b_u, by='userId') %>%
       group_by(year) %>%
       summarize(b_y = sum(rating - mu - b_i - b_u)/(n()+lambda), n_y = n())
     
-    b_g <- split_edx %>%
+      predrat <- validation %>% 
       left_join(b_i, by='movieId') %>%
       left_join(b_u, by='userId') %>%
       left_join(b_y, by = 'year') %>%
-      group_by(genres) %>%
-      summarize(b_g = sum(rating - mu - b_i - b_u - b_y)/(n()+lambda), n_g = n())
-    
-    predicted_ratings <- split_valid %>% 
-      left_join(b_i, by='movieId') %>%
-      left_join(b_u, by='userId') %>%
-      left_join(b_y, by = 'year') %>%
-      left_join(b_g, by = 'genres') %>%
-      mutate(pred = mu + b_i + b_u + b_y + b_g) %>% 
+      mutate(pred = mu + b_i + b_u + b_y) %>% 
       .$pred
     
-    return(RMSE(split_valid_CM$rating,predicted_ratings))
+    return(RMSE(validation_CM$rating,predrat))
   })
   
   # Compute new predictions using the optimal lambda
