@@ -10,9 +10,9 @@ output:
 ---
 \pagebreak
 
-# 1. Introduction
+# Introduction
 
-The main objective here is to producing product recommendations of an analytical system by applying statistical techniques. We are taking 'movielens' database to predict ratings of the movies.
+The main objective here is to produce product recommendations of an analytical system by applying statistical techniques. We are taking 'movielens' database to predict ratings of the movies.
 
 The 10M version of the dataset is available in the grouplens website. Based on the different statistical models, we will build a rating predictor system. 
 
@@ -482,7 +482,7 @@ As per above details, we found the lowest value of RMSE is 0.8647687.
 
 # Conclusion
 
-We have built a machine learning algorithm with different models to predict movie ratings. THe regularised model including the effect of movie, user and year is characterized by the lower RMSE value. Hence, this is the optimal model for this project. This model RMSE value is 0.8647687 which is lower than the evaluation criteria (0.86490). We can also improve the RMSE by adding other effects like genre and age.
+We have built a machine learning algorithm with different models to predict movie ratings. The regularised model including the effect of movie, user and year is characterized by the lower RMSE value. Hence, this is the optimal model for this project. This model RMSE value is 0.8647687 which is lower than the evaluation criteria (0.86490). We can also improve the RMSE by adding other effects like genre and age.
 
 \pagebreak
 
