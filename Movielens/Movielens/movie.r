@@ -14,6 +14,8 @@ library(lubridate)
 # https://grouplens.org/datasets/movielens/10m/
 # http://files.grouplens.org/datasets/movielens/ml-10m.zip
 
+# Kindly download and keep the files movies.dat and ratings.dat in the project folder - ml-10M100K. 
+
 library(readr)
 movies <- read_delim("ml-10M100K/movies.dat", 
                      "::", escape_double = FALSE, col_names = FALSE, 
