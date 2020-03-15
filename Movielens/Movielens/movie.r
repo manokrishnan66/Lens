@@ -354,6 +354,7 @@ validation <- validation %>% select(-rating)#=======
     group_by(year) %>%
     summarize(b_y1 = sum(rating - mu - b_i1 - b_u1)/(n()+lambda), n_y1 = n())
   
+  
   # Predict ratings
   
   predrat_reg1 <- validation %>% 

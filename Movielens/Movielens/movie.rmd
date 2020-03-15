@@ -117,7 +117,7 @@ The title column is merged with name of the movie and the year of release. So, w
 
 ```{r modifying year}
 # Modify the year as a column in the edx & validation datasets
-edx <- edx%>%separate(title,c("name", "year"), "\\s*\\((?=\\d+\\)$)|\\)$")
+ edx <- edx%>%separate(title,c("name", "year"), "\\s*\\((?=\\d+\\)$)|\\)$")
   validation <- validation%>%separate(title,c("name", "year"), "\\s*\\((?=\\d+\\)$)|\\)$")
 ```
 
@@ -478,11 +478,11 @@ The RMSE values of all the represented models are the following:
 rmse_results
 ```
 
-As per above details, we found the lowest value of RMSE is 0.8647687.
+The primitive model was with the mean only model which gave the rmse as 1.0606. Then movie effect model has shown a very little improvisation. The user effect model in-addition to the movie effect has improvised the rmse to 0.8655. Furthermore, we have introduced the regularized movie and user effect model by interating the lamba value. This model gave the rmse as 0.8649. Finally, we added year effect to the regularized movie and user effect model and we have achieved the desired rmse which is below 0.86490. As per above details, we found the lowest value of RMSE is 0.8647687.
 
 # Conclusion
 
-We have built a machine learning algorithm with different models to predict movie ratings. The regularised model including the effect of movie, user and year is characterized by the lower RMSE value. Hence, this is the optimal model for this project. This model RMSE value is 0.8647687 which is lower than the evaluation criteria (0.86490). We can also improve the RMSE by adding other effects like genre and age.
+We have built a machine learning algorithm with different models to predict movie ratings. The regularised model including the effect of movie, user and year is characterized by the lower RMSE value. Hence, this is the optimal model for this project. This model RMSE value is 0.8647687 which is lower than the evaluation criteria (0.86490). We can also improve the RMSE by adding other effects like genre and age with limitation to the configuration of the regular computers.
 
 \pagebreak
 
